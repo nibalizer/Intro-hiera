@@ -1,0 +1,21 @@
+/* custom css and js files included at the top level of your presentation will
+ * * will be included in your presentation */
+.title-slide h1 {
+    color: blue;
+}
+/*
+.content {
+  color: black;
+  font-family: helvetica, arial;
+}
+h1, h2 {
+  font-family: Georgia;
+  position: absolute;
+  right: 120px;
+  top: 20px;
+}
+.content::after {
+  position: absolute;
+  content: url(jay_small.png);
+}
+*/
