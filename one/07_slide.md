@@ -4,9 +4,8 @@
 
 ## Thanks!
 
-     @@@ruby
      Spencer Krum (nibalizer)
-        nibalizer at gmail.com
+        irc/twitter/github
+        nibz@spencerkrum.com
+        nibz@hp.com
 
-     William Van Hevelingen (blkperl)
-        @pdx_blkperl

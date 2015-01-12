@@ -1,21 +1,12 @@
 !SLIDE center
 
 
-# Pro Puppet
+# Introduction to Hiera #
 
-![oscon2014logo.png](oscon2014logo.png)
-
-!SLIDE bullets incremental
-
-# Spencer Krum #
+## Spencer Krum ##
 
 ![hphelion.PNG](hphelion.PNG)
 
-!SLIDE
-
-# William Van Hevelingen #
-
-![psulogo.png](psulogo.png)
 
 !SLIDE center
 

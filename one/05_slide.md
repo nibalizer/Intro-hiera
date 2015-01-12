@@ -1,190 +1,302 @@
-!SLIDE
-
-# Architecting the code base #
-
-!SLIDE
-
-# Things to avoid #
-
-  * node inhertiance
-  * code in node definitions
-  * code in site.pp
-  * multiple levels of class inheritance
-  * class nesting
-  * repeating yourself
-
-!SLIDE
-
-# Node Inheritance #
-
-    @@@puppet
-    node tlab-blades
-    {
-      include cecs::role::linux_teuscher_sys
-      include cecs::role::server
-    }
-
-    node 'taffey.ece.pdx.edu'
-      inherits tlab-blades
-    {
-      include nvidia
-    }
-
-!SLIDE
-
-# Code in node definitions
-
-    @@@puppet
-    node oscon {
-      include web
-      include apache
-      include puppet::client
-
-      $action = '/usr/bin/oscon speak'
-
-      cron { 'speak_on_puppet':
-        command => $action,
-      }
-
-      # more code
-    }
-
-!SLIDE
-
-# Code in site.pp
-
-    @@@puppet
-    # /etc/puppet/manifests/site.pp
-
-    File {
-      owner => '0',
-      group => '0',
-    }
-
-    import 'nodes/*.pp'
-
-    include puppet::client
-
-!SLIDE
-
-# Multiple levels of class inheritance ##
-
-    @@@puppet
-    class server inherits base
-    class webs   inherits server
-    class nginx  inherits webserver
-    class myapp  inherits nginx
-
-!SLIDE
-
-# Class nesting #
-
-* openstack::server ->
-* openstack::template ->
-* openstack::base ->
-* file['puppet.conf'],
-
-!SLIDE
-
-# How to not repeat yourself #
-
-* Use templates instead of multiple files
-* Use parametized classes instead of duplicating classes
-* Abstract business logic into process specific modules
-
 !SLIDE bullets incremental
 
-# Roles and Profiles #
+# Abstracting Data with Hiera #
 
-*  Node definitions should only include roles
-*  Two ways to do this
-*  role per machine type
-*  Base class and service-mapped roles
-
-!SLIDE
-
-* nodes include roles
-* roles include profiles
-* profiles include resources and classes
-* resources come from two places
-* puppet core and modules
-
-
-
-!SLIDE center
-
-
-![glariza_roles_and_profiles.jpg](glariza_roles_and_profiles.jpg)
-
-
-!SLIDE center
-
-
-![us_roles_and_profiles.jpg](us_roles_and_profiles.jpg)
-
+* a place to put your data
+* backend driven
+* function call to lookup on keys
+* hierarchy that is facter aware
+* default and overrides
 
 !SLIDE
 
-# Roles #
+# Public data in code #
 
     @@@puppet
-    class role::dbserver {
-      include profile::mysqlserver
-      include profile::pgserver
+    class { 'jenkins::slave':
+      jenkins_ssh_key => 'AAAAB3Nzbu84a....'
     }
 
-!SLIDE
+!SLIDE commandline incremental
 
-# Profiles #
+# Public data in code #
 
-    @@@puppet
-    class profile::pgserver (){
-        class { 'postgresql::globals': } ->
-        class { 'postgresql::server': }
-        cron { 'backup_postgres.sh':
-            hour => '0', }
-        logrotate::rule { 'postgresql-common': }
-    }
+    # cat /etc/puppet/hieradata/common.yaml
+    ---
+    jenkins_key: AAAAB3NzaC1yc2EAAAADA...
+    ...
 
-!SLIDE
+    # hiera -d jenkins_key
+    DEBUG: Hiera YAML backend starting
+    DEBUG: Looking up jenkins_key in YAML backend
+    DEBUG: Looking for data source common
+    DEBUG: Found jenkins_key in common
 
-# One role per node #
-
-    @@@puppet
-
-
-
-    node 'paste.openstack.org' {
-      class { 'openstack_project::paste':
-        db_host     => hiera('paste_db_host', 'localhost'),
-        db_password => hiera('paste_db_password', 'XXX'),
-        sysadmins   => hiera('sysadmins', []),
-      }
-    }
-
-
+    AAAAB3NzaC1yc2EAAAADAQAB...
 
 !SLIDE code
 
-# Base class with profiles #
-
+# Public data in code #
 
     @@@puppet
-    node
-      'rita.cat.pdx.edu'
-    {
-      class { 'cecs':
-        notifications => 'daytime',
-        login         => 'all_students',
-        root_level    => 'junior_rooters',
-      }
+    $ssh_key = hiera('jenkins_key')
+    class { 'jenkins::slave':
+        jenkins_ssh_key => $ssh_key,
+    }
 
-      include cecs::profile::linux_login_sys
-      include cecs::profile::killvnc
-      include cecs::profile::license::comsol
+!SLIDE
+
+# Secrets in code #
+
+    @@@puppet
+    class { 'mysql::server':
+        root_password => 'hunter2',
     }
 
 
-!SLIDE 
+!SLIDE commandline incremental
 
-# Questions on Architecture?
+# Secrets in code #
+
+    # cat /etc/puppet/hieradata/common.yaml
+    ---
+    ...
+    mysql_root_password: hunter2
+    ...
+
+
+    # hiera -d mysql_root_password
+    DEBUG: Hiera YAML backend starting
+    DEBUG: Looking up mysql_root_password in YAML backend
+    DEBUG: Looking for data source common
+    DEBUG: Found mysql_root_password in common
+
+    hunter2
+
+!SLIDE code
+
+## Secrets in code
+
+    @@@puppet
+    $password = hiera('mysql_root_password')
+
+    class { 'mysql::server':
+      root_password => $password,
+    }
+
+!SLIDE
+
+## Conditional data in code
+
+    @@@puppet
+    class graphite {
+      if $::osfamily == 'RedHat' {
+        $pkgs = [
+            'git',
+            'python-django',
+            'g++',
+            'sqlite3',]
+      ...
+      }
+    }
+
+
+!SLIDE commandline incremental
+
+## Hiera configuration
+
+    # ln -s /etc/hiera.yaml /etc/puppet/hiera.yaml
+
+
+
+!SLIDE commandline incremental
+
+
+## Hiera configuration
+
+    # cat /etc/puppet/hiera.yaml
+    ---
+    :backends:
+      - yaml
+
+    :yaml:
+      :datadir: /etc/puppet/hieradata
+
+    :hierarchy:
+      - "%{clientcert}/common"
+      - "osfamily/%{osfamily}/common"
+      - common
+
+!SLIDE
+
+## Conditional data in code
+
+    @@@puppet
+    class { 'graphite':
+        if $::osfamily == 'RedHat' {
+            $pkgs = [
+                'git',
+                'python-django',
+                'g++',
+                'sqlite3',]
+        ...
+        }
+    }
+
+!SLIDE commandline incremental
+
+
+## Hiera data
+
+    # find /etc/puppet/hieradata
+    .
+    ./common.yaml
+    ./osfamily
+    ./osfamily/RedHat
+    ./osfamily/RedHat/common.yaml
+    ./osfamily/Debian
+    ./osfamily/Debian/common.yaml
+
+
+!SLIDE commandline incremental
+
+
+## Hiera data
+
+    # cat osfamily/Debian/common.yaml
+    ---
+    graphite::pkgs:
+      - graphite
+      - python-django
+      - virtualenv
+
+!SLIDE commandline incremental
+
+## Hiera data
+
+
+    # cat osfamily/RedHat/common.yaml 
+    ---
+    graphite::pkgs:
+      - git
+      - python-django
+      - g++
+      - sqlite3
+      - sqlite3-devel
+      - python26-virtualenv
+
+!SLIDE commandline incremental
+
+## Hiera data
+
+    # hiera graphite::pkgs  osfamily=RedHat
+    ["git",
+     "python-django",
+     "g++",
+     "sqlite3",
+     "sqlite3-devel",
+     "python26-virtualenv"]
+
+!SLIDE commandline incremental
+
+## Hiera data
+
+    # hiera graphite::pkgs  osfamily=Debian
+    ["graphite", "python-django", "virtualenv"]
+
+
+!SLIDE commandline incremental
+
+## Hiera data
+
+    # hiera graphite::pkgs  
+    nil
+
+
+
+!SLIDE
+
+## Conditional data in code
+
+    @@@puppet
+    class graphite {
+        if $::osfamily == 'RedHat' {
+            $pkgs = [
+                'git',
+                'python-django',
+                'g++',
+                'sqlite3',]
+        ...
+        }
+    }
+
+
+!SLIDE
+
+## Conditional data in code
+
+    @@@puppet
+    class graphite {
+      $pkgs = hiera('graphite::pkgs')
+      package { $pkgs:
+        ensure => latest,
+      }
+    }
+
+
+!SLIDE
+
+## Conditional data in code
+
+    @@@puppet
+    class graphite (
+      $pkgs,
+    ){
+      package { $pkgs:
+        ensure => latest,
+      }
+    }
+
+
+!SLIDE
+
+## Backends
+
+* yaml, json
+* file, ldap
+* gpg, eyaml
+* mysql, postgres, redis
+
+!SLIDE
+
+## Pros
+
+* Separation between data and code
+* Composable classes via data bindings
+* Backends, integration with existing datastores
+* Some conditional logic irrelevant
+* Puppet code sanitized
+
+!SLIDE
+
+## Cons
+
+* data bindings
+* hard to figure out where things come from
+* hiera-yaml can only support one data directory
+* debugging
+* public modules can't data bindings
+
+
+!SLIDE
+
+## In module data:
+
+
+[puppet-module-data](https://github.com/ripienaar/puppet-module-data/)
+
+
+!SLIDE
+
+# Questions on Hiera
+
