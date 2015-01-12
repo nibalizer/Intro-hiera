@@ -1,9 +1,8 @@
 {
     "author": [
-        "Spencer Krum",
-        "William Van Hevelingen"
+        "Spencer Krum"
     ],
-    "name": "OSCON 2014 Pro Puppet Talk",
+    "name": "Puppet Camp Portland 2015: Introduction to Hiera",
     "sections": [
         {
             "section": "one"

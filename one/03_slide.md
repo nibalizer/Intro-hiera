@@ -2,24 +2,23 @@
 
 # What is hiera #
 
-* software from puppetlabs
-* started in 2011
-* different from PuppetDB
-
-
-!SLIDE incremental
-
-# What is hiera #
-
-* started out as a puppet plugin
-* fully core now
-* exposes hiera() function to puppet
-
+* Software from puppetlabs
+* Started in 2011
+* Started out as a puppet plugin, core now
 
 !SLIDE incremental
 
 # What is hiera #
 
-* a way to plug data into your puppet code
-* separate concerns of data and configuration
-* plugable backend
+* A way to plug data into your puppet code
+* Separate concerns of data and configuration
+
+!SLIDE incremental
+
+# What is hiera #
+
+* Exposes hiera() function to puppet
+* Plugable backend
+* Different from PuppetDB
+
+

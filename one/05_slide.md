@@ -1,16 +1,52 @@
-!SLIDE bullets incremental
+!SLIDE commandline incremental
 
-# Abstracting Data with Hiera #
 
-* a place to put your data
-* backend driven
-* function call to lookup on keys
-* hierarchy that is facter aware
-* default and overrides
+    # ln -s /etc/hiera.yaml /etc/puppet/hiera.yaml
+
+
+
+!SLIDE commandline incremental
+
+
+    # cat /etc/puppet/hiera.yaml
+    ---
+    :backends:
+      - yaml
+
+    :yaml:
+      :datadir: /etc/puppet/hieradata
+
+    :hierarchy:
+      - "%{clientcert}/common"
+      - "osfamily/%{osfamily}/common"
+      - common
+
+!SLIDE commandline incremental
+
+
+
+    # find /etc/puppet/hieradata
+    .
+    ./common.yaml
+    ./osfamily
+    ./osfamily/RedHat
+    ./osfamily/RedHat/common.yaml
+    ./osfamily/Debian
+    ./osfamily/Debian/common.yaml
+
+
+!SLIDE incremental
+
+# Hiera #
+
+* A place to put your data
+* Backend driven
+* Function call to lookup on keys
+
+
 
 !SLIDE
 
-# Public data in code #
 
     @@@puppet
     class { 'jenkins::slave':
@@ -19,7 +55,6 @@
 
 !SLIDE commandline incremental
 
-# Public data in code #
 
     # cat /etc/puppet/hieradata/common.yaml
     ---
@@ -36,7 +71,6 @@
 
 !SLIDE code
 
-# Public data in code #
 
     @@@puppet
     $ssh_key = hiera('jenkins_key')
@@ -46,7 +80,6 @@
 
 !SLIDE
 
-# Secrets in code #
 
     @@@puppet
     class { 'mysql::server':
@@ -56,7 +89,6 @@
 
 !SLIDE commandline incremental
 
-# Secrets in code #
 
     # cat /etc/puppet/hieradata/common.yaml
     ---
@@ -75,7 +107,6 @@
 
 !SLIDE code
 
-## Secrets in code
 
     @@@puppet
     $password = hiera('mysql_root_password')
@@ -86,7 +117,10 @@
 
 !SLIDE
 
-## Conditional data in code
+# Questions? #
+
+!SLIDE
+
 
     @@@puppet
     class graphite {
@@ -101,18 +135,16 @@
     }
 
 
+
+!SLIDE incremental
+
+# Hiera #
+* Hierarchy that is facter aware
+* Defaults and overrides
+
+
 !SLIDE commandline incremental
 
-## Hiera configuration
-
-    # ln -s /etc/hiera.yaml /etc/puppet/hiera.yaml
-
-
-
-!SLIDE commandline incremental
-
-
-## Hiera configuration
 
     # cat /etc/puppet/hiera.yaml
     ---
@@ -126,6 +158,21 @@
       - "%{clientcert}/common"
       - "osfamily/%{osfamily}/common"
       - common
+
+!SLIDE commandline incremental
+
+
+
+    # find /etc/puppet/hieradata
+    .
+    ./common.yaml
+    ./osfamily
+    ./osfamily/RedHat
+    ./osfamily/RedHat/common.yaml
+    ./osfamily/Debian
+    ./osfamily/Debian/common.yaml
+
+
 
 !SLIDE
 
@@ -143,25 +190,11 @@
         }
     }
 
-!SLIDE commandline incremental
-
-
-## Hiera data
-
-    # find /etc/puppet/hieradata
-    .
-    ./common.yaml
-    ./osfamily
-    ./osfamily/RedHat
-    ./osfamily/RedHat/common.yaml
-    ./osfamily/Debian
-    ./osfamily/Debian/common.yaml
 
 
 !SLIDE commandline incremental
 
 
-## Hiera data
 
     # cat osfamily/Debian/common.yaml
     ---
@@ -172,7 +205,6 @@
 
 !SLIDE commandline incremental
 
-## Hiera data
 
 
     # cat osfamily/RedHat/common.yaml 
@@ -199,7 +231,6 @@
 
 !SLIDE commandline incremental
 
-## Hiera data
 
     # hiera graphite::pkgs  osfamily=Debian
     ["graphite", "python-django", "virtualenv"]
@@ -207,16 +238,14 @@
 
 !SLIDE commandline incremental
 
-## Hiera data
 
-    # hiera graphite::pkgs  
+    # hiera graphite::pkgs
     nil
 
 
 
 !SLIDE
 
-## Conditional data in code
 
     @@@puppet
     class graphite {
@@ -233,7 +262,6 @@
 
 !SLIDE
 
-## Conditional data in code
 
     @@@puppet
     class graphite {
@@ -243,19 +271,6 @@
       }
     }
 
-
-!SLIDE
-
-## Conditional data in code
-
-    @@@puppet
-    class graphite (
-      $pkgs,
-    ){
-      package { $pkgs:
-        ensure => latest,
-      }
-    }
 
 
 !SLIDE
@@ -272,7 +287,7 @@
 ## Pros
 
 * Separation between data and code
-* Composable classes via data bindings
+* Secret storage
 * Backends, integration with existing datastores
 * Some conditional logic irrelevant
 * Puppet code sanitized
@@ -281,11 +296,10 @@
 
 ## Cons
 
-* data bindings
 * hard to figure out where things come from
 * hiera-yaml can only support one data directory
 * debugging
-* public modules can't data bindings
+* public modules + hirea is unsolved
 
 
 !SLIDE
@@ -294,6 +308,23 @@
 
 
 [puppet-module-data](https://github.com/ripienaar/puppet-module-data/)
+
+!SLIDE incremental
+
+# User issues #
+
+* Complicated hierarchy
+* Runaway backends
+* Latency/Load
+* Architecture
+
+!SLIDE incremental
+
+# Positive note #
+
+* Use hiera, its awesome
+* Start with yaml
+* Try and experiment, iterate
 
 
 !SLIDE
