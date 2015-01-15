@@ -1,6 +1,6 @@
-# OSCON 2014 Pro Puppet Talk
+# Introduction to Hiera
 
-http://www.oscon.com/oscon2014/public/schedule/detail/34844
+A talk given at puppet camp pdx 2015
 
 # Running locally
 
